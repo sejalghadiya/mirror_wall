@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-
 class WebSite extends StatefulWidget {
   const WebSite({Key? key}) : super(key: key);
 
@@ -15,6 +14,8 @@ class _WebSiteState extends State<WebSite> {
    late PullToRefreshController pullToRefreshController;
 
    String url = 'https://www.google.com/';
+
+   List<dynamic> bookmarks = [];
   @override
 
   void initState() {
@@ -42,14 +43,14 @@ class _WebSiteState extends State<WebSite> {
               return [
                 PopupMenuItem(
                     child: TextButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          openBookmark();
+                        },
                         icon: Icon(Icons.bookmark_add_outlined),
                         label: Text('All Bookmark'))),
                 PopupMenuItem(
                     child: TextButton.icon(
-                        onPressed: (){
-
-                        },
+                        onPressed: (){ },
                         icon: Icon(Icons.screen_search_desktop),
                         label: Text('Search Engine'))),
               ];
@@ -84,7 +85,9 @@ class _WebSiteState extends State<WebSite> {
             BottomNavigationBarItem(
                 icon: IconButton(
                   icon: Icon(Icons.bookmark_add_outlined,color: Colors.black,size: 25,),
-                  onPressed: (){},
+                  onPressed: (){
+                    addFavoriteLink(context);
+                  },
                 ),
                 label: ''
             ),
@@ -136,14 +139,34 @@ class _WebSiteState extends State<WebSite> {
           title: Text('Add Favorite Link'),
           children: <Widget>[
             TextField(
-              onSubmitted: (link) {
+              onSubmitted: (link)async {
                 Navigator.pop(context, link);
-              },
+                final String? title = await showDialog<String>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return SimpleDialog(
+                        title: Text('add'),
+                        children: [
+                          TextField(
+                            onSubmitted: (bookmarkTitle) {
+                              Navigator.pop(context, bookmarkTitle);
+
+                            },
+                          )
+                        ],
+                      );
+                    }
+                );
+              }
             ),
             TextButton(
               child: Text('Save'),
-              onPressed: () {
+              onPressed: () async{
                 Navigator.pop(context);
+                Uri? url = await controller.getUrl();
+                if (url != null) {
+                  bookmarks.add(url.toString());
+                }
               },
             ),
           ],
@@ -151,7 +174,32 @@ class _WebSiteState extends State<WebSite> {
       },
     );
   }
+  void saveBookmark(String link) {
+    bookmarks.add(link);
+  }
+  void openBookmark() async{
+    final selectedBookmark = await showDialog<String>(
+        context: context,
+        builder: (BuildContext context){
+          return SimpleDialog(
+            title: Text('selected bookmark'),
+            children: bookmarks.map((e) => SimpleDialogOption(
+              onPressed: (){
+                Navigator.pop(context, bookmarks);
+              },
+              child: Text(e),
+            )).toList(),
+          );
+        });
+    if(selectedBookmark != null){
+      await controller.loadUrl(urlRequest: URLRequest(
+          url: Uri.parse(selectedBookmark)
+      ));
+    }
+  }
 }
+
+
 
 
 
